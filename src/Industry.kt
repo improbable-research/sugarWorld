@@ -38,6 +38,8 @@ class Industry(val country : Country) : Consumer() {
         val acquiredLabour = country.workforce.sellTime(requiredLabour, priceOfLabour(expectedSales))
         val production = min(acquiredLabour/labourPerUnitProduction, stock*valueAdded)
         stock += production
+        salesLastStep = salesThisStep
+        salesThisStep = 0.0
     }
 
     fun expectedSalesNextStep() : Double {

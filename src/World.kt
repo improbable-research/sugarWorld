@@ -19,6 +19,7 @@ class World {
 
     fun step() {
         countries.forEach { it.step() }
+        transport.step()
     }
 
     fun getPropensityToTradeWithSelf(country : Country) : Double {
