@@ -20,4 +20,19 @@ class World {
     fun step() {
         countries.forEach { it.step() }
     }
+
+    fun getPropensityToTradeWithSelf(country : Country) : Double {
+        val i = countries.indexOf(country)
+        return propensityToTrade[i][i]
+    }
+
+    fun sellSugar(amnt : Double, buyersCountry: Country) : Double {
+        val buyer = buyersCountry.industry
+        val i = countries.indexOf(buyersCountry)
+        var totalBought = 0.0
+        for((j, p) in propensityToTrade[i].withIndex()) {
+            totalBought += countries[j].industry.exportSugar(amnt*p, buyer)
+        }
+        return totalBought
+    }
 }
