@@ -6,6 +6,7 @@ class Government(var country : Country) : Consumer() {
     var previousPerCapitaGDP = 0.0
     var desiredPerCapitaGDP = 1.0
     var noTimestepsAheadToForecast = 1
+    var desiredReserves = 1000.0
 
     fun step () {
         // Compute change in GDP
@@ -26,18 +27,16 @@ class Government(var country : Country) : Consumer() {
     }
 
     fun calculateTaxPercentage (amountToFund: Double, expectedGDPperCapita: Double) : Double {
-        return amountToFund + 0.1*(bankBalance-1000.0) / (expectedGDPperCapita * country.population)
+        var centralBankContribution = 0.1*(bankBalance-desiredReserves)
+        return amountToFund + centralBankContribution / (expectedGDPperCapita * country.population)
     }
 
     fun calculateAmountToBuy (expectedGDPperCapita: Double) : Double {
         return (desiredPerCapitaGDP - expectedGDPperCapita) * country.population
     }
 
-
     fun calculateGDPperCapita () : Double {
         var priceOfSugar = 1.0
         return (country.industry.salesThisStep * priceOfSugar) / country.population
     }
-
-
 }
