@@ -10,7 +10,7 @@ class Workforce(val country: Country) : Consumer() {
     private var prevTaxes = 10.0
     private var taxChange = 1.0
 
-    var mostRecentWages = 0.0
+    var mostRecentWages = country.population.toDouble()
 
 
     fun sellTime(days: Double, wageInSugarPerDay: Double): Double {
