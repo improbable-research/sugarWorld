@@ -7,21 +7,28 @@ class Workforce(val country: Country) : Consumer() {
     private val wageMidpointX = -0.5
     private val savingLambda = 1.0
     private var prevWagesInSugarPerDay = 1.0
-    var mostRecentWages = 0.0
-    private var prevTaxes = 0.0
+    private var prevTaxes = 10.0
     private var taxChange = 0.0
+
+    var mostRecentWages = 0.0
 
 
     fun sellTime(days: Double, wageInSugarPerDay: Double): Double {
+
         val absoluteWageEffect = expCdf(wageInSugarPerDay, wageLambda)
+
         val wageChange = wageInSugarPerDay - prevWagesInSugarPerDay
         val wageChangeEffect = logisticFunction(wageChange)
+
         val employmentRate = absoluteWageEffect * wageChangeEffect
+
         val daysOfWorkAvailable = country.population * employmentRate
         val daysOfWork = Math.min(daysOfWorkAvailable, days)
+
         mostRecentWages = wageInSugarPerDay * daysOfWork
         bankBalance += mostRecentWages
         prevWagesInSugarPerDay = wageInSugarPerDay
+
         return daysOfWork
     }
 
@@ -38,6 +45,7 @@ class Workforce(val country: Country) : Consumer() {
         val expectedAfterTaxBankBalance = bankBalance - prevTaxes
         val expenditureOnSugar = expectedAfterTaxBankBalance * (1.0 - proportionToSave)
         country.industry.sellSugar(expenditureOnSugar)
+        bankBalance -= expenditureOnSugar
     }
 
     private fun logisticFunction(x: Double): Double {
@@ -50,20 +58,26 @@ class Workforce(val country: Country) : Consumer() {
 }
 
 fun main(args: Array<String>) {
-
     val world = World()
-    val country = Country(100, world)
+    val country = Country(1, 100, world)
     val workforce = Workforce(country)
 
-    println(workforce.sellTime(100.0, 1.0))
-    println(workforce.sellTime(100.0, 1.5))
-    println(workforce.sellTime(100.0, 1.5))
-    println(workforce.sellTime(100.0, 2.5))
-    println(workforce.sellTime(100.0, 1.0))
-    println(workforce.sellTime(100.0, 0.5))
-    println(workforce.sellTime(100.0, 0.5))
-    println(workforce.sellTime(100.0, 0.25))
-    println(workforce.sellTime(100.0, 0.1))
-    println(workforce.sellTime(100.0, 0.0))
+    for (i in 1..100) {
+        println(workforce.sellTime(100.0, 1.0))
+        println("Wages: ${workforce.mostRecentWages}, bank balance: ${workforce.bankBalance}")
+        println(workforce.giveTaxes(10.0))
+        println("Bank balance: ${workforce.bankBalance}")
+        workforce.step()
+        println("Bank balance: ${workforce.bankBalance}")
+    }
 
+//    println(workforce.sellTime(100.0, 1.5))
+//    println(workforce.sellTime(100.0, 1.5))
+//    println(workforce.sellTime(100.0, 2.5))
+//    println(workforce.sellTime(100.0, 1.0))
+//    println(workforce.sellTime(100.0, 0.5))
+//    println(workforce.sellTime(100.0, 0.5))
+//    println(workforce.sellTime(100.0, 0.25))
+//    println(workforce.sellTime(100.0, 0.1))
+//    println(workforce.sellTime(100.0, 0.0))
 }
