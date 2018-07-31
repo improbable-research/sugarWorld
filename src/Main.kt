@@ -3,5 +3,10 @@ fun main(args : Array<String>) {
 
     for(t in 1..100) {
         world.step()
+        print("$t ")
+        for(country in world.countries) {
+            print("${country.industry.salesThisStep} ")
+        }
+        println("")
     }
 }

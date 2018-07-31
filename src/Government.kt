@@ -1,42 +1,44 @@
 import java.lang.Math.exp
+import kotlin.math.min
 
 class Government(var country : Country) : Consumer() {
 
-    var perCapitaGDP = 0.0
-    var previousPerCapitaGDP = 0.0
-    var desiredPerCapitaGDP = 1.0
-    var noTimestepsAheadToForecast = 1
+    var GDP = 0.0
+    var previousGDP = 0.0
+    var desiredGDP = 1.0 * country.population
     var desiredReserves = 1000.0
 
     fun step () {
         // Compute change in GDP
-        perCapitaGDP = calculateGDPperCapita()
-        val changeInGDP = perCapitaGDP - previousPerCapitaGDP
-        previousPerCapitaGDP = perCapitaGDP
-        var expectedGDPperCapita = perCapitaGDP + (noTimestepsAheadToForecast * changeInGDP)
+        GDP = country.workforce.mostRecentWages
+        var expectedGDP = calculateExpectedGDP()
+        previousGDP = GDP
 
         // Decide the extent to which to stimulate the economy through spending
-        val amountToBuy = calculateAmountToBuy(changeInGDP)
-        country.industry.sellSugar(amountToBuy)
+        val amountToBuy = calculateAmountToBuy(expectedGDP)
+        val govSpending = country.industry.sellSugar(amountToBuy)
+        bankBalance -= govSpending
 
         // Set the tax rate to cover that stimulus
-        var taxRate = calculateTaxPercentage(amountToBuy, expectedGDPperCapita)
+        var taxRate = calculateTaxPercentage(govSpending, expectedGDP)
 
         // Ask for tax
-        country.workforce.giveTaxes(perCapitaGDP * country.population * taxRate)
+        val taxesCollected = country.workforce.giveTaxes(GDP * taxRate)
+        bankBalance += taxesCollected
     }
 
-    fun calculateTaxPercentage (amountToFund: Double, expectedGDPperCapita: Double) : Double {
-        var centralBankContribution = 0.1*(bankBalance-desiredReserves)
-        return amountToFund + centralBankContribution / (expectedGDPperCapita * country.population)
+
+    fun calculateTaxPercentage (govSpending: Double, expectedGDP: Double) : Double {
+        var desiredGovSurplus = 0.1*(desiredReserves - bankBalance)
+        return (govSpending + desiredGovSurplus) / expectedGDP
     }
 
-    fun calculateAmountToBuy (expectedGDPperCapita: Double) : Double {
-        return (desiredPerCapitaGDP - expectedGDPperCapita) * country.population
+    fun calculateAmountToBuy (expectedGDP: Double) : Double {
+        return min(desiredGDP - expectedGDP, bankBalance)
     }
 
-    fun calculateGDPperCapita () : Double {
-        var priceOfSugar = 1.0
-        return (country.industry.salesThisStep * priceOfSugar) / country.population
+    fun calculateExpectedGDP() : Double {
+        var noTimestepsAheadToForecast = 1
+        return GDP + noTimestepsAheadToForecast * (GDP - previousGDP)
     }
 }
