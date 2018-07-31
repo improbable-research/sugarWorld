@@ -11,4 +11,9 @@ class Transport {
         })
         deliveries.clear()
     }
+
+    fun printStatus() {
+        val totalInTransit = deliveries.values.sum()
+        println("Goods in transit: $totalInTransit")
+    }
 }
