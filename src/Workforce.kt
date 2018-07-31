@@ -8,44 +8,58 @@ class Workforce(val country: Country) : Consumer() {
     private val savingLambda = 1.0
     private var prevWagesInSugarPerDay = 1.0
     private var prevTaxes = 10.0
-    private var taxChange = 0.0
+    private var taxChange = 1.0
 
     var mostRecentWages = 0.0
 
 
     fun sellTime(days: Double, wageInSugarPerDay: Double): Double {
+        println("workforce been asked for $days days at $wageInSugarPerDay")
 
-        val absoluteWageEffect = expCdf(wageInSugarPerDay, wageLambda)
+        val correctedWageInSugarPerDay = Math.max(wageInSugarPerDay, 0.0)
+        val absoluteWageEffect = expCdf(correctedWageInSugarPerDay, wageLambda)
 
-        val wageChange = wageInSugarPerDay - prevWagesInSugarPerDay
+        val wageChange = correctedWageInSugarPerDay - prevWagesInSugarPerDay
         val wageChangeEffect = logisticFunction(wageChange)
+
+        println("absolute wage effect $absoluteWageEffect, wage change effect $wageChangeEffect")
 
         val employmentRate = absoluteWageEffect * wageChangeEffect
 
         val daysOfWorkAvailable = country.population * employmentRate
         val daysOfWork = Math.min(daysOfWorkAvailable, days)
 
-        mostRecentWages = wageInSugarPerDay * daysOfWork
+        println("Days of work = $daysOfWork")
+
+        mostRecentWages = correctedWageInSugarPerDay * daysOfWork
         bankBalance += mostRecentWages
-        prevWagesInSugarPerDay = wageInSugarPerDay
+        prevWagesInSugarPerDay = correctedWageInSugarPerDay
+
+        println("Wages = $mostRecentWages, bank balance = $bankBalance")
 
         return daysOfWork
     }
 
     fun giveTaxes(amnt: Double): Double {
         taxChange = amnt / prevTaxes
+        println("Tax change $taxChange, taxes $amnt, prev taxes $prevTaxes")
         prevTaxes = amnt
         val taxesGiven = Math.min(amnt, bankBalance)
         bankBalance -= taxesGiven
+        println("Bank balance after tax $bankBalance")
         return taxesGiven
     }
 
     fun step() {
+        println("Tax change $taxChange")
         val proportionToSave = expCdf(taxChange, savingLambda)
+        println("Saving $proportionToSave")
         val expectedAfterTaxBankBalance = bankBalance - prevTaxes
         val expenditureOnSugar = expectedAfterTaxBankBalance * (1.0 - proportionToSave)
+        println("Expenditure on sugar $expenditureOnSugar")
         country.industry.sellSugar(expenditureOnSugar)
         bankBalance -= expenditureOnSugar
+        println("Bank balance after purchasing $bankBalance")
     }
 
     private fun logisticFunction(x: Double): Double {
