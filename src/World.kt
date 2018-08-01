@@ -1,16 +1,20 @@
 class World {
     val countries = arrayOf(
-            Country(1, 12, this),
-            Country(2, 24, this),
-            Country(3, 20, this),
-            Country(4, 18, this)
+            Country(1, 12000, this),
+            Country(1, 12000, this)
+//            Country(1, 12000000, this),
+//            Country(2, 24000000, this),
+//            Country(3, 20000000, this),
+//            Country(4, 18000000, this)
     )
 
     val propensityToTrade = arrayOf(
-            arrayOf(0.5, 0.5, 0.0, 0.0),
-            arrayOf(0.0, 0.5, 0.5, 0.0),
-            arrayOf(0.0, 0.0, 0.5, 0.5),
-            arrayOf(0.5, 0.0, 0.0, 0.5)
+            arrayOf(0.5, 0.5),
+            arrayOf(0.5, 0.5)
+//            arrayOf(0.5, 0.5, 0.0, 0.0),
+//            arrayOf(0.0, 0.5, 0.5, 0.0),
+//            arrayOf(0.0, 0.0, 0.5, 0.5),
+//            arrayOf(0.5, 0.0, 0.0, 0.5)
     )
 
     val transport = Transport()
