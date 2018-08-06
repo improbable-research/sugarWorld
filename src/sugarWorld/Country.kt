@@ -1,12 +1,14 @@
-class Country(val id: Int, val population : Int, val world : World) {
+package sugarWorld
+
+class Country(val id: Int, val population : Int, val world : World, val printLogs: Boolean) {
     val government = Government(this)
     val workforce = Workforce(this)
     val industry = Industry(this)
 
-    fun step() {
-        workforce.step()
-        government.step()
-        industry.step()
+    fun step(t: Int) {
+        workforce.step(t)
+        government.step(t)
+        industry.step(t)
     }
 
     fun printStatus() {

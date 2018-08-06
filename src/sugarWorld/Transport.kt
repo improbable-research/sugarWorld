@@ -1,11 +1,13 @@
+package sugarWorld
+
 class Transport {
     val deliveries = HashMap<Industry, Double>()
 
-    fun pleaseDeliver(amnt: Double, destination :Industry) {
+    fun pleaseDeliver(amnt: Double, destination : Industry) {
         deliveries.put(destination, amnt)
     }
 
-    fun step() {
+    fun step(t: Int) {
         deliveries.forEach({industry, amnt ->
             industry.acceptDelivery(amnt)
         })
@@ -14,6 +16,6 @@ class Transport {
 
     fun printStatus() {
         val totalInTransit = deliveries.values.sum()
-        println("Goods in transit: $totalInTransit")
+        println("[Transport] Goods in transit: $totalInTransit")
     }
 }

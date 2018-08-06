@@ -1,3 +1,5 @@
+package sugarWorld
+
 import kotlin.math.abs
 import kotlin.math.min
 
@@ -17,7 +19,7 @@ fun main(args : Array<String>) {
         y = -1.0
         while(y < 1.0) {
             y += 0.05
-            println("$x $y ${differentiableMin(x,y,0.2)}")
+            println("$x $y ${differentiableMin(x, y, 0.2)}")
         }
         println("")
     }

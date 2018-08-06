@@ -1,46 +1,44 @@
+package sugarWorld
+
 import java.lang.Math.exp
 
-class Workforce(val country: Country) : Consumer() {
+class Workforce(val country: Country) : Consumer(bankBalance = 1000.0) {
 
     private var prevWagesInSugarPerDay = 1.0
-    private var prevTaxes = 10.0
-    private var taxChange = 1.0
+    private var prevTaxes = 0.0
+    private var taxChange = 0.0
 
     var mostRecentWages = country.population.toDouble()
 
 
     fun sellTime(days: Double, wageInSugarPerDay: Double): Double {
-        log("Asked for $days days at $wageInSugarPerDay")
-
         val correctedWageInSugarPerDay = Math.max(wageInSugarPerDay, 0.0)
         val wageChangeInSugarPerDay = correctedWageInSugarPerDay - prevWagesInSugarPerDay
-        val employmentRate = calculateEmploymentRate(wageInSugarPerDay, wageChangeInSugarPerDay)
+        val employmentRate = calculateEmploymentRate(correctedWageInSugarPerDay, wageChangeInSugarPerDay)
 
         val daysOfWorkAvailable = country.population * employmentRate
         val daysOfWork = Math.min(daysOfWorkAvailable, days)
-
-        log("Providing $daysOfWork days of work")
 
         mostRecentWages = correctedWageInSugarPerDay * daysOfWork
         bankBalance += mostRecentWages
         prevWagesInSugarPerDay = correctedWageInSugarPerDay
 
-        log("Wages $mostRecentWages, bank balance $bankBalance")
+        log("Asked for $days days at $wageInSugarPerDay. Providing $daysOfWork for $mostRecentWages pay, bank balance $bankBalance.")
 
         return daysOfWork
     }
 
     fun giveTaxes(amnt: Double): Double {
         taxChange = amnt - prevTaxes
-        log("Tax change $taxChange, taxes $amnt, prev taxes $prevTaxes")
-        prevTaxes = amnt
         val taxesGiven = Math.min(amnt, bankBalance)
         bankBalance -= taxesGiven
-        log("Gave $taxesGiven tax, bank balance $bankBalance")
+        log("Asked for $amnt taxes (prev $prevTaxes, change $taxChange). Gave $taxesGiven, bank balance $bankBalance.")
+        prevTaxes = amnt
         return taxesGiven
     }
 
-    fun step() {
+    fun step(t: Int) {
+        log("Step $t:")
         val proportionToSave = calculateProportionToSave(taxChange)
         val expectedAfterTaxBankBalance = bankBalance - prevTaxes
         val expenditureOnSugar = expectedAfterTaxBankBalance * (1.0 - proportionToSave)
@@ -50,7 +48,9 @@ class Workforce(val country: Country) : Consumer() {
     }
 
     private fun log(msg: String) {
-        println("[WF${country.id}] msg")
+        if (country.printLogs) {
+            println("[WF${country.id}] $msg")
+        }
     }
 
     companion object {
@@ -86,9 +86,9 @@ class Workforce(val country: Country) : Consumer() {
 }
 
 fun main(args: Array<String>) {
-//    val world = World()
-//    val country = Country(1, 100, world)
-//    val workforce = Workforce(country)
+//    val world = sugarWorld.World()
+//    val country = sugarWorld.Country(1, 100, world)
+//    val workforce = sugarWorld.Workforce(country)
 //
 //    for (i in 1..100) {
 //        println(workforce.sellTime(100.0, 1.0))
@@ -107,7 +107,7 @@ fun main(args: Array<String>) {
 //    println()
 //
 //    for (i in -10..10) {
-//        println(Workforce.logisticFunction(i.toDouble(), 0.0, 1.0))
+//        println(sugarWorld.Workforce.logistic(i.toDouble(), 0.0, 1.0))
 //    }
 
 //    println(workforce.sellTime(100.0, 1.5))

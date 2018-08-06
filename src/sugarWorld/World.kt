@@ -1,11 +1,13 @@
-class World {
+package sugarWorld
+
+class World(val printLogs: Boolean = false) {
     val countries = arrayOf(
-            Country(1, 12000, this),
-            Country(1, 12000, this)
-//            Country(1, 12000000, this),
-//            Country(2, 24000000, this),
-//            Country(3, 20000000, this),
-//            Country(4, 18000000, this)
+            Country(1, 12000, this, printLogs),
+            Country(2, 12000, this, printLogs)
+//            sugarWorld.Country(1, 12000000, this, printLogs),
+//            sugarWorld.Country(2, 24000000, this, printLogs),
+//            sugarWorld.Country(3, 20000000, this, printLogs),
+//            sugarWorld.Country(4, 18000000, this, printLogs)
     )
 
     val propensityToTrade = arrayOf(
@@ -19,10 +21,10 @@ class World {
 
     val transport = Transport()
 
-    fun step() {
-        countries.forEach { it.step() }
+    fun step(t: Int) {
+        countries.forEach { it.step(t) }
         printStatus()
-        transport.step()
+        transport.step(t)
     }
 
     fun getPropensityToTradeWithSelf(country: Country): Double {
