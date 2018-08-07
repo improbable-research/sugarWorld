@@ -1,6 +1,12 @@
 package sugarWorld
 
+import java.io.BufferedWriter
+import java.io.File
+import java.io.FileWriter
+
 class World(val printLogs: Boolean = false) {
+    val gdp = arrayListOf<ArrayList<Double>>()
+
     val countries = arrayOf(
             Country(1, 12000, this, printLogs),
             Country(2, 12000, this, printLogs)
@@ -23,6 +29,7 @@ class World(val printLogs: Boolean = false) {
 
     fun step(t: Int) {
         countries.forEach { it.step(t) }
+        countries.forEach { it.lateStep(t) }
         printStatus()
         transport.step(t)
     }
@@ -42,8 +49,29 @@ class World(val printLogs: Boolean = false) {
         return totalBought
     }
 
+    fun writeGDPToCsv(filePath: String) {
+        val dir = File(filePath).parentFile
+        if (!dir.exists()) {
+            dir.mkdirs()
+        }
+
+        val writer = BufferedWriter(FileWriter(filePath))
+        gdp.forEach {
+            writer.write(it.joinToString())
+            writer.newLine()
+        }
+
+        writer.close()
+    }
+
     private fun printStatus() {
         countries.forEach { it.printStatus() }
         transport.printStatus()
+    }
+
+    private fun recordData() {
+        val timestepGDP = arrayListOf<Double>()
+        countries.forEach { timestepGDP.add(it.industry.salesThisStep) }
+        gdp.add(timestepGDP)
     }
 }
