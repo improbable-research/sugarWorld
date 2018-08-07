@@ -4,11 +4,13 @@ package newSugarWorld
 class World {
 
     val countries = listOf(
-            Country(1, this, 10000.0)
+            Country(1, this, 10000.0),
+            Country(2, this, 10000.0)
     )
 
     val importPropensities = listOf(
-            listOf(1.0)
+            listOf(0.5, 0.5),
+            listOf(0.5, 0.5)
     )
 
     val inTransit = mutableMapOf<Country, Double>()
@@ -16,6 +18,7 @@ class World {
     fun step(t: Int) {
         completeDeliveries()
         countries.forEach { it.step(t) }
+        countries.forEach { it.lateStep(t) }
         report(t)
     }
 

@@ -19,12 +19,13 @@ class Workforce(val country: Country, var bankBalance: Double) {
 
 
     fun step(t: Int) {
-        val bankBalanceChange = bankBalance - prevBankBalance
+        val bankBalanceChange = (bankBalance - prevBankBalance) / bankBalance
         prevBankBalance = bankBalance
 
-        proportionToSpend = logistic(bankBalanceChange * 0.1, 0.0, 0.5)
+        proportionToSpend = logistic(bankBalanceChange, 1.0, 0.5)
 
-        val amountToBuy = max(minConsumption, (bankBalance + bankBalanceChange) * proportionToSpend)
+        val amountToBuy = max(minConsumption,(bankBalance + bankBalanceChange) * proportionToSpend)
+//        val amountToBuy = minConsumption + ((bankBalance + bankBalanceChange - minConsumption) * proportionToSpend)
         val bought = country.industry.sellProduct(amountToBuy)
         bankBalance -= bought
         log("Buying $amountToBuy ($proportionToSpend), bought $bought")

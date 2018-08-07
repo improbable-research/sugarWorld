@@ -9,14 +9,15 @@ class Industry(val country: Country, var stock: Double, var bankBalance: Double)
     val salesRecord = arrayListOf(country.workforce.minConsumption)
     val stockRecord = arrayListOf(stock)
 
+    val baselineLabourUnitsRequired = 10.0
     val targetStock = 10000.0
     val productionPerUnitWork = 2.0
+
     var wagePerUnitWork = 0.8
 
     var stockDeficit = 0.0
 
     var sales = 0.0
-    var prevSales = country.workforce.minConsumption
     var salesProjection = country.workforce.minConsumption
 
 
@@ -25,7 +26,7 @@ class Industry(val country: Country, var stock: Double, var bankBalance: Double)
         val importsOrdered = orderImports(extraStockNeeded)
         val domesticProduction = manufacture(extraStockNeeded, importsOrdered)
         stock += domesticProduction
-        log("Stock $stock, prod $domesticProduction, stockDeficit ${this.stockDeficit}")
+        log("Stock $stock, prod $domesticProduction, stockDeficit ${stockDeficit}")
     }
 
     fun lateStep(t: Int) {
@@ -49,6 +50,10 @@ class Industry(val country: Country, var stock: Double, var bankBalance: Double)
         stock += amount
     }
 
+    fun getLatestSales(): Double {
+        return salesRecord[salesRecord.size - 1]
+    }
+
     private fun projectSales(): Double {
         val prevT2 = salesRecord.getOrElse(salesRecord.size - 2, { i -> country.workforce.minConsumption })
         val prevT1 = salesRecord[salesRecord.size - 1]
@@ -64,7 +69,7 @@ class Industry(val country: Country, var stock: Double, var bankBalance: Double)
 
     private fun manufacture(extraStockNeeded: Double, importsOrdered: Double): Double {
         val amountToManufacture = extraStockNeeded - importsOrdered
-        val labourRequired = 10.0 + (amountToManufacture / productionPerUnitWork)
+        val labourRequired = baselineLabourUnitsRequired + (amountToManufacture / productionPerUnitWork)
         wagePerUnitWork = (bankBalance * 0.5) / labourRequired
         val labourHired = country.workforce.employLabour(labourRequired, wagePerUnitWork)
         bankBalance -= labourHired * wagePerUnitWork
