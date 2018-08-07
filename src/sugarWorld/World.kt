@@ -29,7 +29,6 @@ class World(val printLogs: Boolean = false) {
 
     fun step(t: Int) {
         countries.forEach { it.step(t) }
-        countries.forEach { it.lateStep(t) }
         printStatus()
         transport.step(t)
     }
