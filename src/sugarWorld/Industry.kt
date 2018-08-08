@@ -1,18 +1,26 @@
 package sugarWorld
 
+import sugarWorld.Functions.logistic
+import kotlin.math.max
 import kotlin.math.min
 
-class Industry(val country: Country) : Consumer(bankBalance = 1000.0) {
-    val targetStock = 1000.0
+class Industry(val country: Country) : Consumer(bankBalance = country.population.toDouble()) {
+    val targetStock = 10000.0
     var stock = 10000.0
-    var salesLastStep = 0.0
+    var stockDeficit = 0.0
+
+    var salesTwoStepsAgo = country.workforce.baselineExpenditure
+    var salesLastStep = country.workforce.baselineExpenditure
     var salesThisStep = 0.0
+    var labourDeficit = 0.0
     val valueAdded = 1.5 // output per unit input
     val baselineLabour = 10.0
     val labourPerUnitProduction = 0.8 // days work per unit production
+    val labourExpenditureK = 0.5
+    val labourExpenditureMidpoint_x0 = 2.0
 
     fun sellSugar(amnt: Double): Double {
-        val amntSold = min(amnt, stock)
+        val amntSold = max(0.0, min(amnt, stock))
         stock -= amntSold
         bankBalance += amntSold
         salesThisStep += amntSold
@@ -22,12 +30,8 @@ class Industry(val country: Country) : Consumer(bankBalance = 1000.0) {
 
     fun exportSugar(amnt: Double, buyer: Industry): Double {
         val amntSold = sellSugar(amnt)
-        if (buyer != this) {
-            country.world.transport.pleaseDeliver(amntSold, buyer)
-        } else {
-            bankBalance += amntSold
-            acceptDelivery(amntSold)
-        }
+        country.world.transport.pleaseDeliver(amntSold, buyer)
+        log("Exported $amntSold to ${buyer.country.id}")
         return amntSold
     }
 
@@ -40,50 +44,44 @@ class Industry(val country: Country) : Consumer(bankBalance = 1000.0) {
         manufactureProduct()
     }
 
-//    fun manufactureProduct() {
-//        val expectedSales = expectedSalesNextStep()
-//        log("Sales this step $salesThisStep, last step $salesLastStep, expected sales total $expectedSales")
-//        val additionalStockRequired = max(0.0, expectedSales + targetStock - stock)
-//        val rawMaterialsRequired = additionalStockRequired / valueAdded
-//        bankBalance -= country.world.sellSugar(rawMaterialsRequired, country)
-////        val expectedSales = rawMaterialsRequired * valueAdded
-//        val requiredLabour = (additionalStockRequired * labourPerUnitProduction) + baselineLabour
-//        val priceOfLabour = priceOfLabour(expectedSales, requiredLabour)
-//        val acquiredLabour = country.workforce.sellTime(requiredLabour, priceOfLabour)
-//        val production = min(acquiredLabour / labourPerUnitProduction, stock * valueAdded)
-//        stock += production
-//        log("Expected sales net $expectedSales, raw materials required $rawMaterialsRequired, labour required $requiredLabour, " +
-//                "wage $priceOfLabour, acquired labour $acquiredLabour, production $production, stock $stock, bank balance $bankBalance")
-//        salesLastStep = salesThisStep
-//        salesThisStep = 0.0
-//    }
-
-    fun manufactureProduct() {
-        val expectedSalesTotal = expectedSalesNextStep()
-        log("Sales this step $salesThisStep, last step $salesLastStep, expected sales total $expectedSalesTotal")
-        val requiredRawMaterials = 2.0 * (expectedSalesTotal / valueAdded) * (1.0 - country.world.getPropensityToTradeWithSelf(country) / valueAdded)
-        bankBalance -= country.world.sellSugar(requiredRawMaterials, country)
-        val expectedSales = requiredRawMaterials * valueAdded
-        val requiredLabour = (expectedSales * labourPerUnitProduction) + baselineLabour
-        val priceOfLabour = priceOfLabour(expectedSales, requiredLabour)
-        val acquiredLabour = country.workforce.sellTime(requiredLabour, priceOfLabour)
-        val production = min(acquiredLabour / labourPerUnitProduction, stock * valueAdded)
-        stock += production
-        log("Expected sales net $expectedSales, raw materials required $requiredRawMaterials, labour required $requiredLabour, " +
-                "wage $priceOfLabour, acquired labour $acquiredLabour, production $production, stock $stock, bank balance $bankBalance")
+    fun lateStep(t: Int) {
+        salesTwoStepsAgo = salesLastStep
         salesLastStep = salesThisStep
         salesThisStep = 0.0
+
+        stockDeficit = targetStock - stock
+    }
+
+    private fun manufactureProduct() {
+        val expectedSales = expectedSalesNextStep()
+        val extraStockNeeded = max(0.0, expectedSales + stockDeficit)
+        val stockToProduce = extraStockNeeded * country.world.getPropensityToTradeWithSelf(country)
+        val stockToImport = extraStockNeeded - stockToProduce
+        bankBalance -= country.world.sellSugar(stockToImport, country)
+
+        val requiredLabourDays = baselineLabour + (stockToProduce * labourPerUnitProduction)
+        val priceOfLabourPerDay = priceOfLabour(expectedSales, requiredLabourDays)
+        val acquiredLabourDays = country.workforce.sellTime(requiredLabourDays, priceOfLabourPerDay)
+        labourDeficit = (requiredLabourDays - acquiredLabourDays) / requiredLabourDays
+
+        val production = acquiredLabourDays / labourPerUnitProduction
+        stock += production
+        log("Expected sales $expectedSales, extra needed $extraStockNeeded, importing $stockToImport, " +
+                "producing $stockToProduce, labour required $requiredLabourDays, wage $priceOfLabourPerDay, " +
+                "acquired labour $acquiredLabourDays, production $production, stock $stock, bank balance $bankBalance")
     }
 
     fun expectedSalesNextStep(): Double {
-//        return Math.max(0.0, (2.0 * salesThisStep + salesLastStep) / 3.0)
-        return Math.max(0.0, salesThisStep + (salesThisStep - salesLastStep))
+        log("Sales t-2 $salesTwoStepsAgo, sales t-2 $salesLastStep, expected sales ${salesLastStep + (salesLastStep - salesTwoStepsAgo)}")
+        return Math.max(0.0, salesLastStep + (salesLastStep - salesTwoStepsAgo))
+//        return salesLastStep
     }
 
-    fun priceOfLabour(expectedSales: Double, requiredLabour: Double): Double {
-        val expectedProfit = expectedSales * (valueAdded - 1.0)
-//        return (expectedProfit + 0.1 * (bankBalance - 1500.0)) / requiredLabour
-        return expectedProfit / requiredLabour
+    fun priceOfLabour(expectedSales: Double, requiredDaysLabour: Double): Double {
+        val fundsAvailableForLabour = bankBalance + expectedSales
+        val proportionToSpendOnLabour = logistic(labourDeficit, labourExpenditureMidpoint_x0, labourExpenditureK)
+        log("Spending proportion on labour $proportionToSpendOnLabour")
+        return (fundsAvailableForLabour * proportionToSpendOnLabour) / requiredDaysLabour
     }
 
     private fun log(msg: String) {

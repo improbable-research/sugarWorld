@@ -11,6 +11,10 @@ class Country(val id: Int, val population : Int, val world : World, val printLog
         industry.step(t)
     }
 
+    fun lateStep(t: Int) {
+        industry.lateStep(t)
+    }
+
     fun printStatus() {
         val govBank = government.bankBalance
         val workBank = workforce.bankBalance

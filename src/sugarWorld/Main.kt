@@ -1,14 +1,10 @@
 package sugarWorld
 
 fun main(args : Array<String>) {
-    val world = World(printLogs = true)
+    val world = World(printLogs = false)
 
-    for(t in 1..10) {
+    for(t in 1..100) {
         world.step(t)
-//        print("$t ")
-//        for(country in world.countries) {
-//            print("${country.industry.salesThisStep} ")
-//        }
         println("")
     }
 

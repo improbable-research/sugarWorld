@@ -3,7 +3,7 @@ package sugarWorld
 import kotlin.math.max
 import kotlin.math.min
 
-class Government(var country: Country) : Consumer(bankBalance = 1000.0) {
+class Government(var country: Country) : Consumer(bankBalance = country.population.toDouble()) {
 
     val noTimestepsAheadToForecast = 1
     var GDP = 0.0
@@ -35,16 +35,16 @@ class Government(var country: Country) : Consumer(bankBalance = 1000.0) {
     }
 
 
-    fun calculateTaxRate(govSpending: Double, expectedGDP: Double): Double {
+    private fun calculateTaxRate(govSpending: Double, expectedGDP: Double): Double {
         var desiredGovSurplus = 0.1 * (desiredReserves - bankBalance)
         return Math.max((govSpending + desiredGovSurplus) / expectedGDP, 0.0)
     }
 
-    fun calculateAmountToBuy(expectedGDP: Double): Double {
+    private fun calculateAmountToBuy(expectedGDP: Double): Double {
         return max(min(desiredGDP - expectedGDP, bankBalance), 0.0)
     }
 
-    fun calculateForecastedGDP(): Double {
+    private fun calculateForecastedGDP(): Double {
         val gdpChange = GDP - previousGDP
         val forecastGDPChange = noTimestepsAheadToForecast * gdpChange
         return GDP + forecastGDPChange

@@ -8,21 +8,23 @@ class World(val printLogs: Boolean = false) {
     val gdp = arrayListOf<ArrayList<Double>>()
 
     val countries = arrayOf(
-            Country(1, 12000, this, printLogs),
-            Country(2, 12000, this, printLogs)
-//            sugarWorld.Country(1, 12000000, this, printLogs),
-//            sugarWorld.Country(2, 24000000, this, printLogs),
-//            sugarWorld.Country(3, 20000000, this, printLogs),
-//            sugarWorld.Country(4, 18000000, this, printLogs)
+//            Country(1, 12000, this, printLogs),
+//            Country(2, 20000, this, printLogs),
+//            Country(3, 10000, this, printLogs),
+//            Country(4, 15000, this, printLogs)
+            Country(1, 10000, this, printLogs),
+            Country(2, 10000, this, printLogs),
+            Country(3, 10000, this, printLogs),
+            Country(4, 10000, this, printLogs)
     )
 
     val propensityToTrade = arrayOf(
-            arrayOf(0.5, 0.5),
-            arrayOf(0.5, 0.5)
-//            arrayOf(0.5, 0.5, 0.0, 0.0),
-//            arrayOf(0.0, 0.5, 0.5, 0.0),
-//            arrayOf(0.0, 0.0, 0.5, 0.5),
-//            arrayOf(0.5, 0.0, 0.0, 0.5)
+//            arrayOf(0.5, 0.5),
+//            arrayOf(0.5, 0.5)
+            arrayOf(0.5, 0.25, 0.25, 0.0),
+            arrayOf(0.0, 0.5, 0.25, 0.25),
+            arrayOf(0.25, 0.0, 0.5, 0.25),
+            arrayOf(0.25, 0.25, 0.0, 0.5)
     )
 
     val transport = Transport()
@@ -30,6 +32,8 @@ class World(val printLogs: Boolean = false) {
     fun step(t: Int) {
         countries.forEach { it.step(t) }
         printStatus()
+        recordData()
+        countries.forEach { it.lateStep(t) }
         transport.step(t)
     }
 
@@ -39,12 +43,17 @@ class World(val printLogs: Boolean = false) {
     }
 
     fun sellSugar(amnt: Double, buyersCountry: Country): Double {
+        val buyerIdx = countries.indexOf(buyersCountry)
         val buyer = buyersCountry.industry
-        val i = countries.indexOf(buyersCountry)
+        val buyerTradePropensities = propensityToTrade[buyerIdx]
+        val selfTradePropensity = buyerTradePropensities[buyerIdx]
         var totalBought = 0.0
-        for ((j, p) in propensityToTrade[i].withIndex()) {
-            totalBought += countries[j].industry.exportSugar(amnt * p, buyer)
+        for ((i, p) in buyerTradePropensities.withIndex().filter { it.index != buyerIdx }) {
+            val internationalTradePropensity = p / (1.0 - selfTradePropensity)
+            val amntToBuy = amnt * internationalTradePropensity
+            totalBought += countries[i].industry.exportSugar(amntToBuy, buyer)
         }
+
         return totalBought
     }
 

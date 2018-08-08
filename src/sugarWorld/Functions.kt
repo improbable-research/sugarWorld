@@ -1,4 +1,4 @@
-package simpleSugarWorld
+package sugarWorld
 
 
 object Functions {
