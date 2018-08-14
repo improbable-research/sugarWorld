@@ -14,7 +14,7 @@ class Government(var country: Country) : Consumer(bankBalance = country.populati
     fun step(t: Int) {
         log("Step $t:")
 
-        GDP = country.workforce.mostRecentWages
+        GDP = country.industry.salesThisStep
         var forecastedGDP = calculateForecastedGDP()
         previousGDP = GDP
 
@@ -37,7 +37,7 @@ class Government(var country: Country) : Consumer(bankBalance = country.populati
 
     private fun calculateTaxRate(govSpending: Double, expectedGDP: Double): Double {
         var desiredGovSurplus = 0.1 * (desiredReserves - bankBalance)
-        return Math.max((govSpending + desiredGovSurplus) / expectedGDP, 0.0)
+        return min(max((govSpending + desiredGovSurplus) / expectedGDP, 0.0), 1.0)
     }
 
     private fun calculateAmountToBuy(expectedGDP: Double): Double {
@@ -47,7 +47,7 @@ class Government(var country: Country) : Consumer(bankBalance = country.populati
     private fun calculateForecastedGDP(): Double {
         val gdpChange = GDP - previousGDP
         val forecastGDPChange = noTimestepsAheadToForecast * gdpChange
-        return GDP + forecastGDPChange
+        return max(GDP + forecastGDPChange, 0.0)
     }
 
     private fun log(msg: String) {

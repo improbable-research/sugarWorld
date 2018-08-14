@@ -3,6 +3,7 @@ package sugarWorld
 import sugarWorld.Functions.expCdf
 import sugarWorld.Functions.logistic
 import kotlin.math.max
+import kotlin.math.min
 
 class Workforce(val country: Country) : Consumer(bankBalance = country.population.toDouble()) {
 
@@ -17,12 +18,12 @@ class Workforce(val country: Country) : Consumer(bankBalance = country.populatio
 
 
     fun sellTime(days: Double, wageInSugarPerDay: Double): Double {
-        val correctedWageInSugarPerDay = Math.max(wageInSugarPerDay, 0.0)
+        val correctedWageInSugarPerDay = max(wageInSugarPerDay, 0.0)
         val wageChangeInSugarPerDay = correctedWageInSugarPerDay - prevWagesInSugarPerDay
         val employmentRate = calculateEmploymentRate(correctedWageInSugarPerDay, wageChangeInSugarPerDay)
 
         val daysOfWorkAvailable = country.population * employmentRate
-        val daysOfWork = Math.min(daysOfWorkAvailable, days)
+        val daysOfWork = min(daysOfWorkAvailable, days)
 
         prevWages = mostRecentWages
         mostRecentWages = correctedWageInSugarPerDay * daysOfWork
@@ -62,25 +63,27 @@ class Workforce(val country: Country) : Consumer(bankBalance = country.populatio
 
     companion object {
 
-        private val wageChangeK = 0.25
-        private val wageChangeMidpoint_x0 = -0.5
-        private val wageLambda = 2.0
+        private const val wageChangeK = 0.25
+        private const val wageChangeMidpoint_x0 = -0.5
+        private const val wageLambda = 2.0
+        private const val wealthChangeK = 0.05
+        private const val wealthChangeMidpoint_x0 = 0.0
+        private const val wealthChangeEffectMultiplier = 2.0
+        private const val savingLambda = 1.0
 
-        private val wealthChangeK = 0.05
-        private val wealthChangeMidpoint_x0 = 0.0
-        private val wealthChangeEffectMultiplier = 2.0
-        private val savingLambda = 1.0
-
+        fun calculateProportionToSave(taxChange: Double, wageChange: Double): Double {
+            val wealthChange = wageChange - taxChange
+            val wealthChangeEffect = logistic(
+                    - wealthChange,
+                    wealthChangeMidpoint_x0,
+                    wealthChangeK
+            ) * wealthChangeEffectMultiplier
+            return expCdf(wealthChangeEffect, savingLambda)
+        }
         fun calculateEmploymentRate(wageInSugarPerDay: Double, wageChangeInSugarPerDay: Double): Double {
             val absoluteWageEffect = expCdf(wageInSugarPerDay, wageLambda)
             val wageChangeEffect = logistic(wageChangeInSugarPerDay, wageChangeMidpoint_x0, wageChangeK)
             return absoluteWageEffect * wageChangeEffect
-        }
-
-        fun calculateProportionToSave(taxChange: Double, wageChange: Double): Double {
-            val wealthChange = wageChange - taxChange
-            val taxChangeEffect = logistic(wealthChange, wealthChangeMidpoint_x0, wealthChangeK) * wealthChangeEffectMultiplier
-            return expCdf(taxChangeEffect, savingLambda)
         }
     }
 }

@@ -6,6 +6,10 @@ import java.io.FileWriter
 
 class World(val printLogs: Boolean = false) {
     val gdp = arrayListOf<ArrayList<Double>>()
+    val governmentBalance = arrayListOf<ArrayList<Double>>()
+    val industryBalance = arrayListOf<ArrayList<Double>>()
+    val workforceBalance = arrayListOf<ArrayList<Double>>()
+    val industryStock = arrayListOf<ArrayList<Double>>()
 
     val countries = arrayOf(
 //            Country(1, 12000, this, printLogs),
@@ -57,14 +61,16 @@ class World(val printLogs: Boolean = false) {
         return totalBought
     }
 
-    fun writeGDPToCsv(filePath: String) {
+    fun writeDataToCsv(data: ArrayList<ArrayList<Double>>, filePath: String) {
         val dir = File(filePath).parentFile
         if (!dir.exists()) {
             dir.mkdirs()
         }
 
         val writer = BufferedWriter(FileWriter(filePath))
-        gdp.forEach {
+        writer.write(countries.map { "country_${it.id}" }.joinToString())
+        writer.newLine()
+        data.forEach {
             writer.write(it.joinToString())
             writer.newLine()
         }
@@ -79,7 +85,19 @@ class World(val printLogs: Boolean = false) {
 
     private fun recordData() {
         val timestepGDP = arrayListOf<Double>()
+        val timestepGovernmentBalance = arrayListOf<Double>()
+        val timestepIndustryBalance = arrayListOf<Double>()
+        val timestepWorkforceBalance = arrayListOf<Double>()
+        val timestepIndustryStock = arrayListOf<Double>()
         countries.forEach { timestepGDP.add(it.industry.salesThisStep) }
+        countries.forEach { timestepGovernmentBalance.add(it.government.bankBalance) }
+        countries.forEach { timestepIndustryBalance.add(it.industry.bankBalance) }
+        countries.forEach { timestepWorkforceBalance.add(it.workforce.bankBalance) }
+        countries.forEach { timestepIndustryStock.add(it.industry.stock)}
         gdp.add(timestepGDP)
+        governmentBalance.add(timestepGovernmentBalance)
+        industryBalance.add(timestepIndustryBalance)
+        workforceBalance.add(timestepWorkforceBalance)
+        industryStock.add(timestepIndustryStock)
     }
 }
