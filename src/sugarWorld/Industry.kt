@@ -1,26 +1,30 @@
 package sugarWorld
 
+import sugarWorld.Functions.expCdf
 import sugarWorld.Functions.logistic
 import kotlin.math.max
 import kotlin.math.min
 
 class Industry(val country: Country) : Consumer(bankBalance = country.population.toDouble()) {
-    val targetStock = 10000.0
     var stock = 10000.0
     var stockDeficit = 0.0
 
+    var targetStock = 10000.0
     var salesTwoStepsAgo = country.workforce.baselineExpenditure
     var salesLastStep = country.workforce.baselineExpenditure
     var salesThisStep = 0.0
     var labourDeficit = 0.0
-    val valueAdded = 1.5 // output per unit input
-    val baselineLabour = 10.0
-    val labourPerUnitProduction = 0.8 // days work per unit production
-    val labourExpenditureK = 0.5
-    val labourExpenditureMidpoint_x0 = 2.0
+
+    companion object {
+        const val baselineLabour = 10.0
+        const val labourPerUnitProduction = 0.8 // days work per unit production
+        const val labourExpenditureK = 0.5
+        const val labourExpenditureMidpoint_x0 = 2.0
+        const val sellingK = 1.0
+    }
 
     fun sellSugar(amnt: Double): Double {
-        val amntSold = max(0.0, min(amnt, stock))
+        val amntSold = amnt * logistic(stock, amnt, sellingK)
         stock -= amntSold
         bankBalance += amntSold
         salesThisStep += amntSold
@@ -56,13 +60,13 @@ class Industry(val country: Country) : Consumer(bankBalance = country.population
         val expectedSales = expectedSalesNextStep()
         val extraStockNeeded = max(0.0, expectedSales + stockDeficit)
         val stockToProduce = extraStockNeeded * country.world.getPropensityToTradeWithSelf(country)
-        val stockToImport = extraStockNeeded - stockToProduce
+        val stockToImport = min(extraStockNeeded - stockToProduce, bankBalance)
         bankBalance -= country.world.sellSugar(stockToImport, country)
 
         val requiredLabourDays = baselineLabour + (stockToProduce * labourPerUnitProduction)
         val priceOfLabourPerDay = priceOfLabour(expectedSales, requiredLabourDays)
         val acquiredLabourDays = country.workforce.sellTime(requiredLabourDays, priceOfLabourPerDay)
-        labourDeficit = (requiredLabourDays - acquiredLabourDays) / requiredLabourDays
+        labourDeficit = requiredLabourDays - acquiredLabourDays
 
         val production = acquiredLabourDays / labourPerUnitProduction
         stock += production
@@ -72,9 +76,8 @@ class Industry(val country: Country) : Consumer(bankBalance = country.population
     }
 
     fun expectedSalesNextStep(): Double {
-        log("Sales t-2 $salesTwoStepsAgo, sales t-2 $salesLastStep, expected sales ${salesLastStep + (salesLastStep - salesTwoStepsAgo)}")
+        log("Sales t-2 $salesTwoStepsAgo, sales t-1 $salesLastStep, expected sales ${salesLastStep + (salesLastStep - salesTwoStepsAgo)}")
         return Math.max(0.0, salesLastStep + (salesLastStep - salesTwoStepsAgo))
-//        return salesLastStep
     }
 
     fun priceOfLabour(expectedSales: Double, requiredDaysLabour: Double): Double {
