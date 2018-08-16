@@ -29,3 +29,7 @@ target
 
 # Data
 *.csv
+
+# Python
+.ipynb_checkpoints/
+*.pyc
