@@ -9,11 +9,18 @@ class GDPModel(object):
     colnames_actual = ['country_{}_actual'.format(c) for c in countries]
     colnames_predicted = ['country_{}_predicted'.format(c) for c in countries]
     train_perc = 0.8
+    window = 1
+    params = dict()
 
-    def __init__(self, X_data, Y_data):
+    def __init__(self, X_data, Y_data, **kwargs):
         self.X_data, self.Y_data = X_data.copy(), Y_data.copy()
         self.Y_data.columns = self.colnames_actual
         self.validation = None
+        try:
+            self.window = kwargs.pop('window')
+        except KeyError:
+            pass
+        self.params.update(kwargs)
 
         n_train = int(self.train_perc * len(X_data))
         n_test = len(X_data) - n_train
@@ -23,6 +30,14 @@ class GDPModel(object):
     @staticmethod
     def _data_split(data, split):
         return data[data['split'] == split].drop('split', axis=1)
+
+    def _lagged_features_frame(self, X):
+        n_features = len(X.columns) * self.window
+        n_samples = len(X) - self.window + 1
+        x = np.empty((n_samples, n_features))
+        for i in range(n_samples):
+            x[i, :] = X.iloc[i:(i + self.window), :].values.reshape(n_features)
+        return x
 
     def X_train(self):
         return self._data_split(self.X_data, 'train')
@@ -40,7 +55,8 @@ class GDPModel(object):
         raise NotImplementedError
 
     def fit_transform(self):
-        preds, idx = self._fit_transform()
+        preds = self._fit_transform()
+        idx = self.X_train().index[(self.window - 1):].append(self.X_test().index[(self.window - 1):])
         Y_predictions = pd.DataFrame(preds, index=idx)
         Y_predictions.columns = self.colnames_predicted
         self.validation = self.Y_data.join(Y_predictions, how='inner')

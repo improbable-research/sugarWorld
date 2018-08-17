@@ -1,136 +1,113 @@
 import numpy as np
+import pandas as pd
 import keras
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
+from xgboost import XGBRegressor
+from sklearn.multioutput import MultiOutputRegressor
 from sklearn.preprocessing import MinMaxScaler
 from gdp import GDPModel
 
 
-# Benchmarks
-class NaiveMean(GDPModel):
+# Benchmark
+class gdpNaiveMean(GDPModel):
     def _fit_transform(self):
         Y_means = self.Y_train().mean()
-        idx = self.Y_data.index
-        return np.tile(Y_means, (len(idx), 1)), idx
+        return np.tile(Y_means, (len(self.Y_data), 1))
 
 
-class NaiveConstant(GDPModel):
+# Benchmark
+class gdpNaiveConstant(GDPModel):
     def _fit_transform(self):
-        idx = self.Y_data.index
-        return self.X_data.iloc[:, :4], idx
+        return self.X_data.iloc[:, :4]
 
 
-# Linear regression over the last n time steps
-class Autoregressive(GDPModel):
-    def __init__(self, X_data, Y_data, window):
-        super(Autoregressive, self).__init__(X_data, Y_data)
-        self.window = window
-
+class gdpLinearRegression(GDPModel):
     def _fit_transform(self):
-        X_train = self.X_train()
-        Y_train = self.Y_train()
-        X_test = self.X_test()
+        x_train = self._lagged_features_frame(self.X_train())
+        y_train = self.Y_train().iloc[(self.window - 1):].values
+        x_test = self._lagged_features_frame(self.X_test())
 
-        # Build training set
-        n_features = len(X_train.columns) * self.window
-        n_samples = len(X_train) - self.window + 1
-        x_train = np.empty((n_samples, n_features))
-        for i in range(n_samples):
-            x_train[i, :] = X_train.iloc[i: (i + self.window)].values.reshape(n_features)
-        y_train = Y_train.iloc[(self.window - 1):].values
-
-        # Build model
-        lr = LinearRegression()
+        lr = LinearRegression(**self.params)
         lr.fit(x_train, y_train)
 
-        # Predict training set
         train_preds = lr.predict(x_train)
-
-        # Build test set
-        n_samples = len(X_test) - self.window + 1
-        x_test = np.empty((n_samples, n_features))
-        for i in range(n_samples):
-            x_test[i, :] = X_test.iloc[i: (i + self.window)].values.reshape(n_features)
-
-        # Predict test set
         test_preds = lr.predict(x_test)
 
-        # Return predictions and respective time index
-        idx = X_train.index[(self.window - 1):].append(X_test.index[(self.window - 1):])
-        return np.concatenate([train_preds, test_preds]), idx
+        return np.concatenate([train_preds, test_preds])
 
 
-# Ensemble model using only features from the current step
-class MarkovEnsemble(GDPModel):
-    def __init__(self, X_data, Y_data, **kwargs):
-        super(MarkovEnsemble, self).__init__(X_data, Y_data)
-        self.rf_params = dict(
-            n_estimators=5000,
-            max_features='sqrt',
-        )
-        self.rf_params.update(kwargs)
+class gdpRandomForest(GDPModel):
+    params = dict(
+        n_estimators=5000,
+        max_features='sqrt',
+    )
 
     def _fit_transform(self):
-        rf = RandomForestRegressor(**self.rf_params)
-        rf.fit(self.X_train(), self.Y_train())
-        idx = self.Y_data.index
-        predictions = rf.predict(self.X_data.drop('split', axis=1))
-        return predictions, idx
+        x_train = self._lagged_features_frame(self.X_train())
+        y_train = self.Y_train().iloc[(self.window - 1):].values
+        x_test = self._lagged_features_frame(self.X_test())
+
+        rf = RandomForestRegressor(**self.params)
+        rf.fit(x_train, y_train)
+
+        train_preds = rf.predict(x_train)
+        test_preds = rf.predict(x_test)
+
+        return np.concatenate([train_preds, test_preds])
 
 
-# Recurrent NN using features from the last n steps
-class LSTM(GDPModel):
-    def __init__(self, X_data, Y_data, window, **kwargs):
-        super(LSTM, self).__init__(X_data, Y_data)
-        self.window = window
-        self.fit_params = dict(
-            epochs=300,
-            batch_size=12,
-            verbose=0,
-        )
-        self.fit_params.update(kwargs)
+class gdpXGBoost(GDPModel):
+    params = dict(
+        n_estimators=5000,
+        max_depth=5,
+        subsample=0.5,
+    )
 
     def _fit_transform(self):
-        X_train = self.X_train()
-        Y_train = self.Y_train()
-        X_test = self.X_test()
+        x_train = self._lagged_features_frame(self.X_train())
+        y_train = self.Y_train().iloc[(self.window - 1):].values
+        x_test = self._lagged_features_frame(self.X_test())
 
-        # Scale variables
+        xgb = MultiOutputRegressor(XGBRegressor(**self.params))
+        xgb.fit(x_train, y_train)
+
+        train_preds = xgb.predict(x_train)
+        test_preds = xgb.predict(x_test)
+
+        return np.concatenate([train_preds, test_preds])
+
+
+class gdpLSTM(GDPModel):
+    params = dict(
+        epochs=300,
+        batch_size=12,
+        verbose=0,
+    )
+
+    def _fit_transform(self):
+        n_features = len(self.X_data.columns) - 1
+
         feature_scaler = MinMaxScaler(feature_range=(0, 1))
         target_scaler = MinMaxScaler(feature_range=(0, 1))
-        features_scaled = feature_scaler.fit_transform(X_train.values)
-        target_scaled = target_scaler.fit_transform(Y_train.values)
+        X_train_scaled = pd.DataFrame(feature_scaler.fit_transform(self.X_train().values))
+        Y_train_scaled = pd.DataFrame(target_scaler.fit_transform(self.Y_train().values))
+        X_test_scaled = pd.DataFrame(feature_scaler.transform(self.X_test().values))
 
-        # Build training set
-        n_samples = len(features_scaled) - self.window + 1
-        n_features = features_scaled.shape[1]
-        x_train = np.empty(shape=(n_samples, self.window, n_features))
-        y_train = np.empty(shape=(n_samples, target_scaled.shape[1]))
-        for i in range(n_samples):
-            x_train[i, :, :] = features_scaled[i:i + self.window, :]
-            y_train[i, :] = target_scaled[i + self.window - 1, :]
+        x_train = self._lagged_features_frame(X_train_scaled).reshape((-1, self.window, n_features))
+        y_train = Y_train_scaled.iloc[(self.window - 1):].values
+        x_test = self._lagged_features_frame(X_test_scaled).reshape((-1, self.window, n_features))
 
-        # Build model
+
         model = keras.Sequential()
         model.add(keras.layers.LSTM(20, input_shape=(self.window, n_features)))
         model.add(keras.layers.BatchNormalization())
+        model.add(keras.layers.Dropout(0.2))
         model.add(keras.layers.Dense(4))
         model.compile(loss='mean_squared_error', optimizer='adam')
-        model.fit(x_train, y_train, **self.fit_params)
+        model.fit(x_train, y_train, **self.params)
 
-        # Predict training set
         train_preds = target_scaler.inverse_transform(model.predict(x_train))
-
-        # Build test set
-        features_scaled = feature_scaler.transform(X_test.values)
-        n_samples = len(features_scaled) - self.window + 1
-        x_test = np.empty(shape=(n_samples, self.window, n_features))
-        for i in range(n_samples):
-            x_test[i, :, :] = features_scaled[i:i + self.window, :]
-
-        # Predict test set
         test_preds = target_scaler.inverse_transform(model.predict(x_test))
 
-        # Return predictions and respective time index
-        idx = X_train.index[(self.window - 1):].append(X_test.index[(self.window - 1):])
-        return np.concatenate([train_preds, test_preds]), idx
+        return np.concatenate([train_preds, test_preds])
