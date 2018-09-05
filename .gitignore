@@ -25,3 +25,11 @@ hs_err_pid*
 .idea
 build
 out
+target
+
+# Data
+*.csv
+
+# Python
+.ipynb_checkpoints/
+*.pyc
