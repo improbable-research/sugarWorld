@@ -12,10 +12,6 @@ class World(val printLogs: Boolean = false) {
     val industryStock = arrayListOf<ArrayList<Double>>()
 
     val countries = arrayOf(
-//            Country(1, 12000, this, printLogs),
-//            Country(2, 20000, this, printLogs),
-//            Country(3, 10000, this, printLogs),
-//            Country(4, 15000, this, printLogs)
             Country(1, 10000, this, printLogs),
             Country(2, 10000, this, printLogs),
             Country(3, 10000, this, printLogs),
@@ -23,8 +19,6 @@ class World(val printLogs: Boolean = false) {
     )
 
     val propensityToTrade = arrayOf(
-//            arrayOf(0.5, 0.5),
-//            arrayOf(0.5, 0.5)
             arrayOf(0.5, 0.25, 0.25, 0.0),
             arrayOf(0.0, 0.5, 0.25, 0.25),
             arrayOf(0.25, 0.0, 0.5, 0.25),

@@ -18,24 +18,25 @@ class Government(var country: Country) : Consumer(bankBalance = country.populati
         var forecastedGDP = calculateForecastedGDP()
         previousGDP = GDP
 
-        // Decide the extent to which to stimulate the economy through spending
-        val amountToBuy = calculateAmountToBuy(forecastedGDP)
-        val govSpending = country.industry.sellSugar(amountToBuy)
-        bankBalance -= govSpending
+        val govSpending = stimulateEconomy(forecastedGDP)
 
-        // Set the tax rate to cover that stimulus
-        val taxRate = calculateTaxRate(govSpending, forecastedGDP)
+        val taxRate = calculateTaxRateToCoverGovSpending(govSpending, forecastedGDP)
         val taxAmount = GDP * taxRate
 
         log("Tax rate $taxRate, amount $taxAmount, GDP $GDP, expected GDP $forecastedGDP, gov spending $govSpending")
 
-        // Ask for tax
         val taxesCollected = country.workforce.giveTaxes(GDP * taxRate)
         bankBalance += taxesCollected
     }
 
+    private fun stimulateEconomy(forecastedGDP: Double): Double {
+        val amountToBuy = calculateAmountToBuy(forecastedGDP)
+        val govSpending = country.industry.sellSugar(amountToBuy)
+        bankBalance -= govSpending
+        return govSpending
+    }
 
-    private fun calculateTaxRate(govSpending: Double, expectedGDP: Double): Double {
+    private fun calculateTaxRateToCoverGovSpending(govSpending: Double, expectedGDP: Double): Double {
         var desiredGovSurplus = 0.1 * (desiredReserves - bankBalance)
         return min(max((govSpending + desiredGovSurplus) / expectedGDP, 0.0), 1.0)
     }
